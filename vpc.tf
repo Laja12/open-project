@@ -1,44 +1,81 @@
-variable "region" {
-  description = "The AWS region to create resources in"
-  default     = "us-east-1"
+resource "aws_vpc" "demo_vpc" {
+  cidr_block = var.vpc_cidr
+  tags = {
+    Name = "demo-vpc"
+  }
 }
  
-variable "vpc_cidr" {
-  description = "The CIDR block for the VPC"
-  default     = "10.0.0.0/16"
+resource "aws_internet_gateway" "demo_igw" {
+  vpc_id = aws_vpc.demo_vpc.id
+  tags = {
+    Name = "demo-igw-gateway"
+  }
 }
  
-variable "public_subnet_a_cidr" {
-  description = "The CIDR block for the first public subnet"
-  default     = "10.0.1.0/24"
+resource "aws_route_table" "public_rt1" {
+  vpc_id = aws_vpc.demo_vpc.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.demo_igw.id
+  }
+  tags = {
+    Name = "public-route-table1"
+  }
 }
  
-variable "public_subnet_b_cidr" {
-  description = "The CIDR block for the second public subnet"
-  default     = "10.0.2.0/24"
+resource "aws_route_table_association" "rt_assc_1" {
+  subnet_id      = aws_subnet.public_subnet_a.id
+  route_table_id = aws_route_table.public_rt1.id
 }
  
-variable "availability_zone_a" {
-  description = "The availability zone for the first public subnet"
-  default     = "us-east-1a"
+resource "aws_route_table_association" "rt_assc_2" {
+  subnet_id      = aws_subnet.public_subnet_b.id
+  route_table_id = aws_route_table.public_rt1.id
 }
  
-variable "availability_zone_b" {
-  description = "The availability zone for the second public subnet"
-  default     = "us-east-1b"
+resource "aws_subnet" "public_subnet_a" {
+  vpc_id            = aws_vpc.demo_vpc.id
+  cidr_block        = var.public_subnet_a_cidr
+  availability_zone = var.availability_zone_a
+  tags = {
+    Name = "public-subnet-a"
+  }
 }
  
-variable "ami_id" {
-  description = "The AMI ID for the EC2 instance"
-  default     = "ami-084568db4383264d4"
+resource "aws_subnet" "public_subnet_b" {
+  vpc_id            = aws_vpc.demo_vpc.id
+  cidr_block        = var.public_subnet_b_cidr
+  availability_zone = var.availability_zone_b
+  tags = {
+    Name = "public-subnet-b"
+  }
 }
  
-variable "instance_type" {
-  description = "The instance type for the EC2 instance"
-  default     = "t2.medium"
-}
+resource "aws_security_group" "demo_sg" {
+  vpc_id = aws_vpc.demo_vpc.id
  
-variable "alb_name" {
-  description = "The alb name"
-  default     = "demo-alb"
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+ 
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+ 
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+ 
+  tags = {
+    Name = "demo-sg"
+  }
 }
