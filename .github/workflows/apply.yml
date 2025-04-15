@@ -1,4 +1,4 @@
-name: S3-creation
+name: open-project
 
 on:
   workflow_dispatch:
